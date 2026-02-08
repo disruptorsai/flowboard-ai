@@ -30,7 +30,7 @@ export default function Layout({ children, currentPageName }) {
 
   const navigation = [
     { name: 'Board', href: createPageUrl('KanbanBoard'), icon: LayoutGrid },
-    { name: 'AI Assistant', href: '#', icon: Sparkles },
+    { name: 'AI Assistant', href: createPageUrl('AIAssistant'), icon: Sparkles },
   ];
 
   const handleLogout = async () => {
@@ -59,7 +59,8 @@ export default function Layout({ children, currentPageName }) {
           {navigation.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.href || 
-                           (item.href.includes('KanbanBoard') && currentPageName === 'KanbanBoard');
+                           (item.href.includes('KanbanBoard') && currentPageName === 'KanbanBoard') ||
+                           (item.href.includes('AIAssistant') && currentPageName === 'AIAssistant');
             
             return (
               <Link

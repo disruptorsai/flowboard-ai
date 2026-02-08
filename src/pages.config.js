@@ -48,11 +48,13 @@
  * The mainPage value must match a key in the PAGES object exactly.
  */
 import KanbanBoard from './pages/KanbanBoard';
+import AIAssistant from './pages/AIAssistant';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
     "KanbanBoard": KanbanBoard,
+    "AIAssistant": AIAssistant,
 }
 
 export const pagesConfig = {
