@@ -132,6 +132,7 @@ export default function TaskDetailModal({ task, open, onClose, onUpdate, onDelet
                 <SelectContent className="bg-gray-800 border-gray-700">
                   <SelectItem value="todo">To-do</SelectItem>
                   <SelectItem value="in_progress">In Progress</SelectItem>
+                  <SelectItem value="complete">Complete</SelectItem>
                 </SelectContent>
               </Select>
             </div>

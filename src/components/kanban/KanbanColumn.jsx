@@ -3,13 +3,15 @@ import { Droppable } from '@hello-pangea/dnd';
 import { Card } from '@/components/ui/card';
 
 const columnStyles = {
-  todo: 'from-blue-500/10 to-blue-600/5 border-blue-500/30',
-  in_progress: 'from-purple-500/10 to-purple-600/5 border-purple-500/30'
+  todo: 'from-blue-500/20 to-cyan-500/10 border-blue-400/40 shadow-blue-500/10',
+  in_progress: 'from-purple-500/20 to-pink-500/10 border-purple-400/40 shadow-purple-500/10',
+  complete: 'from-emerald-500/20 to-teal-500/10 border-emerald-400/40 shadow-emerald-500/10'
 };
 
 const columnIcons = {
   todo: '📋',
-  in_progress: '⚡'
+  in_progress: '⚡',
+  complete: '✨'
 };
 
 export default function KanbanColumn({ id, title, children, taskCount }) {
@@ -34,8 +36,9 @@ export default function KanbanColumn({ id, title, children, taskCount }) {
               min-h-[600px] p-4
               bg-gradient-to-br ${columnStyles[id]}
               border-2 backdrop-blur-sm
+              shadow-lg
               transition-all duration-300
-              ${snapshot.isDraggingOver ? 'ring-2 ring-purple-500/50 scale-[1.02]' : ''}
+              ${snapshot.isDraggingOver ? 'ring-4 ring-purple-400/60 scale-[1.02] shadow-2xl' : ''}
             `}
           >
             {children}

@@ -30,23 +30,30 @@ export default function TaskCard({ task, onClick, isDragging }) {
 
   const dueDateStatus = getDueDateStatus();
 
+  const isComplete = task.status === 'complete';
+
   return (
     <Card
       onClick={onClick}
       className={`
         p-4 mb-3 cursor-pointer
-        bg-gradient-to-br from-gray-800/90 to-gray-900/90
-        border border-gray-700/50 hover:border-purple-500/50
+        ${isComplete 
+          ? 'bg-gradient-to-br from-emerald-900/40 via-teal-900/30 to-cyan-900/40 border-emerald-400/30' 
+          : 'bg-gradient-to-br from-gray-800/95 via-gray-850/90 to-gray-900/95 border-gray-600/40'
+        }
+        border-2 hover:border-purple-400/60
         transition-all duration-300 ease-out
-        hover:shadow-lg hover:shadow-purple-500/20
-        hover:scale-[1.02]
-        ${isDragging ? 'opacity-50 rotate-2' : ''}
-        ${dueDateStatus?.status === 'overdue' ? 'ring-1 ring-red-500/30' : ''}
+        hover:shadow-xl hover:shadow-purple-500/30
+        hover:scale-[1.03]
+        backdrop-blur-sm
+        ${isDragging ? 'opacity-50 rotate-3 scale-105' : ''}
+        ${dueDateStatus?.status === 'overdue' ? 'ring-2 ring-red-500/50 shadow-red-500/20' : ''}
+        ${isComplete ? 'opacity-75' : ''}
       `}
     >
       <div className="space-y-3">
         <div className="flex items-start justify-between gap-2">
-          <h3 className="font-semibold text-gray-100 leading-tight flex-1">
+          <h3 className={`font-semibold leading-tight flex-1 ${isComplete ? 'line-through text-emerald-300/70' : 'text-gray-100'}`}>
             {task.title}
           </h3>
           <div className="flex flex-wrap gap-1 justify-end">

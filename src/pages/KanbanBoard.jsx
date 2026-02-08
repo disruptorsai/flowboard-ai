@@ -9,6 +9,7 @@ import TaskCard from '../components/kanban/TaskCard';
 import AddTaskModal from '../components/kanban/AddTaskModal';
 import TaskDetailModal from '../components/kanban/TaskDetailModal';
 import AIChatbot from '../components/kanban/AIChatbot';
+import confetti from 'canvas-confetti';
 
 export default function KanbanBoard() {
   const [showAddModal, setShowAddModal] = useState(false);
@@ -43,6 +44,37 @@ export default function KanbanBoard() {
     onSuccess: () => queryClient.invalidateQueries(['tasks']),
   });
 
+  const triggerConfetti = () => {
+    const duration = 3000;
+    const animationEnd = Date.now() + duration;
+    const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 1000 };
+
+    const randomInRange = (min, max) => Math.random() * (max - min) + min;
+
+    const interval = setInterval(() => {
+      const timeLeft = animationEnd - Date.now();
+
+      if (timeLeft <= 0) {
+        return clearInterval(interval);
+      }
+
+      const particleCount = 50 * (timeLeft / duration);
+      
+      confetti({
+        ...defaults,
+        particleCount,
+        origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 },
+        colors: ['#10b981', '#14b8a6', '#06b6d4', '#8b5cf6', '#ec4899']
+      });
+      confetti({
+        ...defaults,
+        particleCount,
+        origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 },
+        colors: ['#10b981', '#14b8a6', '#06b6d4', '#8b5cf6', '#ec4899']
+      });
+    }, 250);
+  };
+
   const handleDragEnd = async (result) => {
     if (!result.destination) return;
 
@@ -54,6 +86,10 @@ export default function KanbanBoard() {
 
     const taskId = draggableId;
     const newStatus = destination.droppableId;
+    
+    if (newStatus === 'complete' && source.droppableId !== 'complete') {
+      triggerConfetti();
+    }
     
     const sourceTasks = tasks.filter(t => t.status === source.droppableId);
     const destTasks = tasks.filter(t => t.status === destination.droppableId);
@@ -100,28 +136,31 @@ export default function KanbanBoard() {
 
   const todoTasks = tasks.filter(t => t.status === 'todo').sort((a, b) => (a.order || 0) - (b.order || 0));
   const inProgressTasks = tasks.filter(t => t.status === 'in_progress').sort((a, b) => (a.order || 0) - (b.order || 0));
+  const completeTasks = tasks.filter(t => t.status === 'complete').sort((a, b) => (a.order || 0) - (b.order || 0));
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-purple-950 p-8">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-900 p-8 relative overflow-hidden">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-purple-900/20 via-transparent to-transparent pointer-events-none" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-blue-900/20 via-transparent to-transparent pointer-events-none" />
+      <div className="max-w-[1600px] mx-auto relative z-10">
         <div className="mb-8 flex items-center justify-between">
           <div>
-            <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-400 mb-2">
+            <h1 className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 mb-2 drop-shadow-2xl">
               My Kanban Board
             </h1>
-            <p className="text-gray-400">Organize your tasks with style</p>
+            <p className="text-gray-300 text-lg">Organize your tasks with style ✨</p>
           </div>
           <Button
             onClick={() => setShowAddModal(true)}
-            className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 shadow-lg shadow-purple-500/30"
+            className="bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 hover:from-purple-700 hover:via-pink-700 hover:to-blue-700 shadow-2xl shadow-purple-500/50 text-lg px-6 py-6 hover:scale-105 transition-transform"
           >
-            <Plus className="w-5 h-5 mr-2" />
+            <Plus className="w-6 h-6 mr-2" />
             Add Task
           </Button>
         </div>
 
         <DragDropContext onDragEnd={handleDragEnd}>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <KanbanColumn id="todo" title="To-do" taskCount={todoTasks.length}>
               {todoTasks.map((task, index) => (
                 <Draggable key={task.id} draggableId={task.id} index={index}>
@@ -144,6 +183,26 @@ export default function KanbanBoard() {
 
             <KanbanColumn id="in_progress" title="In Progress" taskCount={inProgressTasks.length}>
               {inProgressTasks.map((task, index) => (
+                <Draggable key={task.id} draggableId={task.id} index={index}>
+                  {(provided, snapshot) => (
+                    <div
+                      ref={provided.innerRef}
+                      {...provided.draggableProps}
+                      {...provided.dragHandleProps}
+                    >
+                      <TaskCard
+                        task={task}
+                        onClick={() => setSelectedTask(task)}
+                        isDragging={snapshot.isDragging}
+                      />
+                    </div>
+                  )}
+                </Draggable>
+              ))}
+            </KanbanColumn>
+
+            <KanbanColumn id="complete" title="Complete" taskCount={completeTasks.length}>
+              {completeTasks.map((task, index) => (
                 <Draggable key={task.id} draggableId={task.id} index={index}>
                   {(provided, snapshot) => (
                     <div
