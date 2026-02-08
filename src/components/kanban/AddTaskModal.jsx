@@ -17,26 +17,64 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Plus, Sparkles } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { Plus, Sparkles, Calendar as CalendarIcon, Loader2 } from 'lucide-react';
+import { format } from 'date-fns';
+import { base44 } from '@/api/base44Client';
 
 export default function AddTaskModal({ open, onClose, onAdd }) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState('medium');
+  const [dueDate, setDueDate] = useState(null);
+  const [assignedTo, setAssignedTo] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isAiProcessing, setIsAiProcessing] = useState(false);
+
+  const handleAiPrioritize = async () => {
+    if (!title.trim()) return;
+    
+    setIsAiProcessing(true);
+    try {
+      const response = await base44.functions.invoke('aiPrioritizeTask', {
+        title,
+        description
+      });
+      
+      if (response.data.priority) {
+        setPriority(response.data.priority);
+      }
+      if (response.data.suggested_due_date) {
+        setDueDate(new Date(response.data.suggested_due_date));
+      }
+    } catch (error) {
+      console.error('AI prioritization failed:', error);
+    }
+    setIsAiProcessing(false);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!title.trim()) return;
 
     setIsSubmitting(true);
-    await onAdd({ title, description, priority, status: 'todo' });
+    await onAdd({ 
+      title, 
+      description, 
+      priority, 
+      status: 'todo',
+      due_date: dueDate ? format(dueDate, 'yyyy-MM-dd') : null,
+      assigned_to: assignedTo || null
+    });
     setIsSubmitting(false);
     
     // Reset form
     setTitle('');
     setDescription('');
     setPriority('medium');
+    setDueDate(null);
+    setAssignedTo('');
     onClose();
   };
 
@@ -74,19 +112,76 @@ export default function AddTaskModal({ open, onClose, onAdd }) {
             />
           </div>
           
-          <div>
-            <Label htmlFor="priority" className="text-gray-300">Priority</Label>
-            <Select value={priority} onValueChange={setPriority}>
-              <SelectTrigger className="bg-gray-800 border-gray-700 text-gray-100">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="bg-gray-800 border-gray-700">
-                <SelectItem value="low">Low</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="high">High</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="priority" className="text-gray-300">Priority</Label>
+              <Select value={priority} onValueChange={setPriority}>
+                <SelectTrigger className="bg-gray-800 border-gray-700 text-gray-100">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-gray-800 border-gray-700">
+                  <SelectItem value="low">Low</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="high">High</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div>
+              <Label className="text-gray-300">Due Date</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start text-left font-normal bg-gray-800 border-gray-700 text-gray-100"
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dueDate ? format(dueDate, 'MMM d, yyyy') : 'Pick a date'}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0 bg-gray-800 border-gray-700">
+                  <Calendar
+                    mode="single"
+                    selected={dueDate}
+                    onSelect={setDueDate}
+                    className="bg-gray-800 text-gray-100"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
           </div>
+
+          <div>
+            <Label htmlFor="assigned_to" className="text-gray-300">Assign To (email)</Label>
+            <Input
+              id="assigned_to"
+              type="email"
+              value={assignedTo}
+              onChange={(e) => setAssignedTo(e.target.value)}
+              placeholder="user@example.com"
+              className="bg-gray-800 border-gray-700 text-gray-100"
+            />
+          </div>
+
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleAiPrioritize}
+            disabled={!title.trim() || isAiProcessing}
+            className="w-full border-purple-500/50 text-purple-400 hover:bg-purple-500/10"
+          >
+            {isAiProcessing ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                AI is thinking...
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4 mr-2" />
+                AI Prioritize & Suggest Due Date
+              </>
+            )}
+          </Button>
           
           <DialogFooter>
             <Button

@@ -17,14 +17,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Save, Trash2, X } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { Save, Trash2, X, Calendar as CalendarIcon, Sparkles, Loader2 } from 'lucide-react';
+import { format } from 'date-fns';
+import { base44 } from '@/api/base44Client';
 
 export default function TaskDetailModal({ task, open, onClose, onUpdate, onDelete }) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState('medium');
   const [status, setStatus] = useState('todo');
+  const [dueDate, setDueDate] = useState(null);
+  const [assignedTo, setAssignedTo] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isAiProcessing, setIsAiProcessing] = useState(false);
 
   useEffect(() => {
     if (task) {
@@ -32,15 +39,46 @@ export default function TaskDetailModal({ task, open, onClose, onUpdate, onDelet
       setDescription(task.description || '');
       setPriority(task.priority || 'medium');
       setStatus(task.status || 'todo');
+      setDueDate(task.due_date ? new Date(task.due_date) : null);
+      setAssignedTo(task.assigned_to || '');
     }
   }, [task]);
+
+  const handleAiPrioritize = async () => {
+    if (!title.trim()) return;
+    
+    setIsAiProcessing(true);
+    try {
+      const response = await base44.functions.invoke('aiPrioritizeTask', {
+        title,
+        description
+      });
+      
+      if (response.data.priority) {
+        setPriority(response.data.priority);
+      }
+      if (response.data.suggested_due_date) {
+        setDueDate(new Date(response.data.suggested_due_date));
+      }
+    } catch (error) {
+      console.error('AI prioritization failed:', error);
+    }
+    setIsAiProcessing(false);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!title.trim()) return;
 
     setIsSubmitting(true);
-    await onUpdate(task.id, { title, description, priority, status });
+    await onUpdate(task.id, { 
+      title, 
+      description, 
+      priority, 
+      status,
+      due_date: dueDate ? format(dueDate, 'yyyy-MM-dd') : null,
+      assigned_to: assignedTo || null
+    });
     setIsSubmitting(false);
     onClose();
   };
@@ -112,6 +150,63 @@ export default function TaskDetailModal({ task, open, onClose, onUpdate, onDelet
               </Select>
             </div>
           </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label className="text-gray-300">Due Date</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start text-left font-normal bg-gray-800 border-gray-700 text-gray-100"
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dueDate ? format(dueDate, 'MMM d, yyyy') : 'Pick a date'}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0 bg-gray-800 border-gray-700">
+                  <Calendar
+                    mode="single"
+                    selected={dueDate}
+                    onSelect={setDueDate}
+                    className="bg-gray-800 text-gray-100"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            <div>
+              <Label htmlFor="edit-assigned" className="text-gray-300">Assign To</Label>
+              <Input
+                id="edit-assigned"
+                type="email"
+                value={assignedTo}
+                onChange={(e) => setAssignedTo(e.target.value)}
+                placeholder="user@example.com"
+                className="bg-gray-800 border-gray-700 text-gray-100"
+              />
+            </div>
+          </div>
+
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleAiPrioritize}
+            disabled={!title.trim() || isAiProcessing}
+            className="w-full border-purple-500/50 text-purple-400 hover:bg-purple-500/10"
+          >
+            {isAiProcessing ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                AI is thinking...
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4 mr-2" />
+                AI Prioritize & Suggest Due Date
+              </>
+            )}
+          </Button>
           
           <DialogFooter className="flex justify-between">
             <Button
